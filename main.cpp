@@ -1,5 +1,10 @@
+#ifdef WIN32 
+#include <SDL.h>
+#include <SDL_thread.h>
+#else
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_thread.h>
+#endif
 #include <stdio.h>
 #include <cstdlib>
 #include <complex>
@@ -7,6 +12,9 @@
 #include <random>
 #include <chrono>
 #include <thread>
+
+#undef main
+
 const int SCREEN_WIDTH = 1024;
 const int SCREEN_HEIGHT = 1024;
 
@@ -182,6 +190,7 @@ int buddahbrot(double epsilon, int max_iter, int image_width, unsigned * pixels,
 		omp_unset_lock(&localLock);
 		
 	}	
+	return 1;
 }
 
 
@@ -189,7 +198,7 @@ int buddahbrot_thread(void * ptr)
 {
 	mandelbrot_data * m_data = (mandelbrot_data *) ptr;	
 	
-	static unsigned * pixels = new unsigned [RENDER_WIDTH * RENDER_HEIGHT * 3];
+	static unsigned pixels[RENDER_WIDTH * RENDER_HEIGHT * 3] = { 0 };
 	
 	const unsigned int max_iter = 20000;
 	const double epsilon = 4.0 / RENDER_WIDTH;
@@ -241,7 +250,7 @@ int buddahbrot_thread(void * ptr)
 
 			//unsigned char val = (unsigned char) ((255 * sqrt(pixels[x])) / sqrt(max_val / 4));
 			//unsigned val = (unsigned char) ((255 * pixels[x]) / (max_val / 1));
-			unsigned val = ((255 * sqrt(pixels[x])) / sqrt(7 * average));
+			double val = ((255 * sqrt(pixels[x])) / sqrt(7 * average));
 
 			if (val > 255)
 			{
@@ -260,7 +269,7 @@ int buddahbrot_thread(void * ptr)
 
 int buddahbrot_runner(void * ptr)
 {
-	#pragma omp parallel shared(quit) num_threads(2)
+	#pragma omp parallel shared(quit) num_threads(8)
 	{
 		int threadID = omp_get_thread_num();
 		
